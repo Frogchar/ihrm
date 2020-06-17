@@ -66,7 +66,7 @@ public class CompanyController {
     //查询全部企业列表
     @RequestMapping(value="",method = RequestMethod.GET)
     public Result findAll() {
-        int i = 1/0;
+//        int i = 1/0;
         List<Company> list = companyService.findAll();
         Result result = new Result(ResultCode.SUCCESS);
         result.setData(list);
