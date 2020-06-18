@@ -4,12 +4,20 @@ import com.ihrm.common.controller.BaseController;
 import com.ihrm.common.entity.PageResult;
 import com.ihrm.common.entity.Result;
 import com.ihrm.common.entity.ResultCode;
+import com.ihrm.common.exception.CommonException;
+import com.ihrm.common.utils.JwtUtils;
 import com.ihrm.domain.system.User;
+import com.ihrm.domain.system.response.ProfileResult;
 import com.ihrm.system.service.UserService;
+import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -25,8 +33,52 @@ import java.util.Map;
 //3.设置父路径
 @RequestMapping(value="/sys")
 public class UserController extends BaseController {
-    @Autowired
+    @Resource
     private UserService userService;
+
+    @Resource
+    private JwtUtils jwtUtils;
+
+    /**
+     * 获取用户信息
+     * @param request
+     * @return
+     * @throws Exception
+     */
+    @RequestMapping(value="/profile",method = RequestMethod.POST)
+    public Result profile(HttpServletRequest request) throws Exception {
+        String authorization = request.getHeader("Authorization");
+        if (!StringUtils.isEmpty(authorization)) {
+            throw new CommonException(ResultCode.UNAUTHORISE);
+        }
+        String token = authorization.replace("Bearer ", "");
+        Claims claims = jwtUtils.parseJwt(token);
+        if (claims == null) {
+            throw new CommonException(ResultCode.UNAUTHORISE);
+        }
+        String userId = claims.getId();
+        User user = userService.findById(userId);
+        ProfileResult profileResult = new ProfileResult(user);
+        return new Result(ResultCode.SUCCESS, profileResult);
+    }
+
+    /**
+     * 登录
+     */
+    @RequestMapping(value="/login",method = RequestMethod.POST)
+    public Result login(@RequestBody Map<String, String> loginMap) throws CommonException {
+        String mobile = loginMap.get("mobile");
+        String password = loginMap.get("password");
+        User user = userService.findByMobile(mobile);
+        if (user == null || !password.equals(user.getPassword())) {
+            throw new CommonException(ResultCode.MOBILEORPASSWORDERROR);
+        }
+        Map<String,Object> map = new HashMap<>();
+        map.put("companyId",user.getCompanyId());
+        map.put("companyName",user.getCompanyName());
+        String jwt = jwtUtils.createJwt(user.getId(), user.getUsername(), map);
+        return new Result(ResultCode.SUCCESS, jwt);
+    }
 
     /**
      * 保存
