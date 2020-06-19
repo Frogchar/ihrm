@@ -6,11 +6,14 @@ import com.ihrm.common.entity.Result;
 import com.ihrm.common.entity.ResultCode;
 import com.ihrm.common.exception.CommonException;
 import com.ihrm.common.utils.JwtUtils;
+import com.ihrm.common.utils.PermissionConstants;
+import com.ihrm.domain.system.Permission;
+import com.ihrm.domain.system.Role;
 import com.ihrm.domain.system.User;
 import com.ihrm.domain.system.response.ProfileResult;
+import com.ihrm.system.service.PermissionService;
 import com.ihrm.system.service.UserService;
 import io.jsonwebtoken.Claims;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,11 +30,8 @@ import java.util.Map;
  * @date 2020/6/17 15:47
  * @Email songchao_ss@163.com
  */
-//1.解决跨域
 @CrossOrigin
-//2.声明restContoller
 @RestController
-//3.设置父路径
 @RequestMapping(value="/sys")
 public class UserController extends BaseController {
     @Resource
@@ -38,6 +39,9 @@ public class UserController extends BaseController {
 
     @Resource
     private JwtUtils jwtUtils;
+
+    @Resource
+    PermissionService permissionService;
 
     /**
      * 获取用户信息
@@ -47,18 +51,22 @@ public class UserController extends BaseController {
      */
     @RequestMapping(value="/profile",method = RequestMethod.POST)
     public Result profile(HttpServletRequest request) throws Exception {
-        String authorization = request.getHeader("Authorization");
-        if (!StringUtils.isEmpty(authorization)) {
-            throw new CommonException(ResultCode.UNAUTHORISE);
-        }
-        String token = authorization.replace("Bearer ", "");
-        Claims claims = jwtUtils.parseJwt(token);
-        if (claims == null) {
-            throw new CommonException(ResultCode.UNAUTHORISE);
-        }
+
         String userId = claims.getId();
         User user = userService.findById(userId);
-        ProfileResult profileResult = new ProfileResult(user);
+
+        ProfileResult profileResult = null;
+
+        if ("user".equals(user.getLevel())) {
+            profileResult = new ProfileResult(user);
+        } else {
+            Map map = new HashMap();
+            if ("coAdmin".equals(user.getLevel())) {
+                map.put("enVisible", "1");
+            }
+            List<Permission> perms = permissionService.findAll(map);
+            profileResult = new ProfileResult(user, perms);
+        }
         return new Result(ResultCode.SUCCESS, profileResult);
     }
 
@@ -74,10 +82,36 @@ public class UserController extends BaseController {
             throw new CommonException(ResultCode.MOBILEORPASSWORDERROR);
         }
         Map<String,Object> map = new HashMap<>();
+        StringBuilder sb = new StringBuilder();
+        // 添加权限
+        for (Role role : user.getRoles()) {
+            for (Permission permission : role.getPermissions()) {
+                // api权限
+                if (PermissionConstants.PY_API == permission.getType()) {
+                    String code = permission.getCode();
+                    sb.append(code).append(",");
+                }
+            }
+        }
+        map.put("apis", sb.toString());
         map.put("companyId",user.getCompanyId());
         map.put("companyName",user.getCompanyName());
         String jwt = jwtUtils.createJwt(user.getId(), user.getUsername(), map);
         return new Result(ResultCode.SUCCESS, jwt);
+    }
+
+    /**
+     * 分配角色
+     */
+    @RequestMapping(value = "/user/assignRoles", method = RequestMethod.PUT)
+    public Result assignRoles(@RequestBody Map<String,Object> map) {
+        //1.获取被分配的用户id
+        String userId = (String) map.get("id");
+        //2.获取到角色的id列表
+        List<String> roleIds = (List<String>) map.get("roleIds");
+        //3.调用service完成角色分配
+        userService.assignRoles(userId,roleIds);
+        return new Result(ResultCode.SUCCESS);
     }
 
     /**
@@ -133,7 +167,7 @@ public class UserController extends BaseController {
     /**
      * 根据id删除
      */
-    @RequestMapping(value = "/user/{id}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/user/{id}", method = RequestMethod.DELETE,name = "point-user-delete")
     public Result delete(@PathVariable(value = "id") String id) {
         userService.deleteById(id);
         return new Result(ResultCode.SUCCESS);

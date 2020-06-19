@@ -1,15 +1,13 @@
 package com.ihrm.domain.system.response;
 
+import com.ihrm.common.utils.PermissionConstants;
 import com.ihrm.domain.system.Permission;
 import com.ihrm.domain.system.Role;
 import com.ihrm.domain.system.User;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Setter
 @Getter
@@ -18,6 +16,31 @@ public class ProfileResult {
     private String username;
     private String company;
     private Map<String,Object> roles = new HashMap<>();
+
+    public ProfileResult(User user, List<Permission> list) {
+        this.mobile = user.getMobile();
+        this.username = user.getUsername();
+        this.company = user.getCompanyName();
+
+        Set<String> menus = new HashSet<>();
+        Set<String> points = new HashSet<>();
+        Set<String> apis = new HashSet<>();
+
+        for (Permission permission : list) {
+            Integer type = permission.getType();
+            String code = permission.getCode();
+            if (PermissionConstants.PY_MENU == type) {
+                menus.add(code);
+            } else if (PermissionConstants.PY_POINT == type) {
+                points.add(code);
+            } else {
+                apis.add(code);
+            }
+        }
+        this.roles.put("menus",menus);
+        this.roles.put("points",points);
+        this.roles.put("apis",apis);
+    }
 
     public ProfileResult(User user) {
         this.mobile = user.getMobile();
