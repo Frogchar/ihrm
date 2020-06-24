@@ -14,12 +14,17 @@ import com.ihrm.domain.system.response.ProfileResult;
 import com.ihrm.system.service.PermissionService;
 import com.ihrm.system.service.UserService;
 import io.jsonwebtoken.Claims;
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.crypto.hash.Md5Hash;
+import org.apache.shiro.subject.Subject;
 import org.springframework.data.domain.Page;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,27 +82,42 @@ public class UserController extends BaseController {
     public Result login(@RequestBody Map<String, String> loginMap) throws CommonException {
         String mobile = loginMap.get("mobile");
         String password = loginMap.get("password");
-        User user = userService.findByMobile(mobile);
-        if (user == null || !password.equals(user.getPassword())) {
-            throw new CommonException(ResultCode.MOBILEORPASSWORDERROR);
+        // 改造后
+        try {
+            password = new Md5Hash(password, mobile, 3).toString();
+            UsernamePasswordToken passwordToken = new UsernamePasswordToken(mobile, password);
+            // shiro 调用releam 完成登录
+            Subject subject = SecurityUtils.getSubject();
+            subject.login(passwordToken);
+            // 获取sessionid
+            String sessionId = (String)subject.getSession().getId();
+            return new Result(ResultCode.SUCCESS, sessionId);
+        } catch (Exception e) {
+            return new Result(ResultCode.MOBILEORPASSWORDERROR);
         }
-        Map<String,Object> map = new HashMap<>();
-        StringBuilder sb = new StringBuilder();
-        // 添加权限
-        for (Role role : user.getRoles()) {
-            for (Permission permission : role.getPermissions()) {
-                // api权限
-                if (PermissionConstants.PY_API == permission.getType()) {
-                    String code = permission.getCode();
-                    sb.append(code).append(",");
-                }
-            }
-        }
-        map.put("apis", sb.toString());
-        map.put("companyId",user.getCompanyId());
-        map.put("companyName",user.getCompanyName());
-        String jwt = jwtUtils.createJwt(user.getId(), user.getUsername(), map);
-        return new Result(ResultCode.SUCCESS, jwt);
+
+        // 改造前
+//        User user = userService.findByMobile(mobile);
+//        if (user == null || !password.equals(user.getPassword())) {
+//            throw new CommonException(ResultCode.MOBILEORPASSWORDERROR);
+//        }
+//        Map<String,Object> map = new HashMap<>();
+//        StringBuilder sb = new StringBuilder();
+//        // 添加权限
+//        for (Role role : user.getRoles()) {
+//            for (Permission permission : role.getPermissions()) {
+//                // api权限
+//                if (PermissionConstants.PY_API == permission.getType()) {
+//                    String code = permission.getCode();
+//                    sb.append(code).append(",");
+//                }
+//            }
+//        }
+//        map.put("apis", sb.toString());
+//        map.put("companyId",user.getCompanyId());
+//        map.put("companyName",user.getCompanyName());
+//        String jwt = jwtUtils.createJwt(user.getId(), user.getUsername(), map);
+//        return new Result(ResultCode.SUCCESS, jwt);
     }
 
     /**
