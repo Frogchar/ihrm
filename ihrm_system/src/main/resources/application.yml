@@ -6,6 +6,9 @@ spring:
   #1.应用配置
   application:
     name: ihrm-system #指定服务名
+  redis:
+    host: 127.0.0.1
+    port: 6379
   #2.数据库连接池
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
@@ -21,3 +24,9 @@ jwt:
   config:
     key: frogchar
     ttl: 360000
+
+#微服务注册到eureka配置
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:6868/eureka/

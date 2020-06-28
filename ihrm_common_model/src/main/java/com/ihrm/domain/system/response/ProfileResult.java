@@ -1,20 +1,22 @@
 package com.ihrm.domain.system.response;
 
-import com.ihrm.common.utils.PermissionConstants;
 import com.ihrm.domain.system.Permission;
 import com.ihrm.domain.system.Role;
 import com.ihrm.domain.system.User;
 import lombok.Getter;
 import lombok.Setter;
+import org.crazycake.shiro.AuthCachePrincipal;
 
+import java.io.Serializable;
 import java.util.*;
 
 @Setter
 @Getter
-public class ProfileResult {
+public class ProfileResult implements Serializable, AuthCachePrincipal {
     private String mobile;
     private String username;
     private String company;
+    private String companyId;
     private Map<String,Object> roles = new HashMap<>();
 
     public ProfileResult(User user, List<Permission> list) {
@@ -29,9 +31,9 @@ public class ProfileResult {
         for (Permission permission : list) {
             Integer type = permission.getType();
             String code = permission.getCode();
-            if (PermissionConstants.PY_MENU == type) {
+            if (1 == type) {
                 menus.add(code);
-            } else if (PermissionConstants.PY_POINT == type) {
+            } else if (2 == type) {
                 points.add(code);
             } else {
                 apis.add(code);
@@ -68,5 +70,10 @@ public class ProfileResult {
         this.roles.put("menus",menus);
         this.roles.put("points",points);
         this.roles.put("apis",apis);
+    }
+
+    @Override
+    public String getAuthCacheKey() {
+        return null;
     }
 }

@@ -9,17 +9,12 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>ihrm_common_model</artifactId>
+    <artifactId>ihrm_eureka</artifactId>
 
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.frogchar</groupId>-->
-<!--            <artifactId>ihrm_common</artifactId>-->
-<!--            <version>1.0-SNAPSHOT</version>-->
-<!--        </dependency>-->
     </dependencies>
 </project>

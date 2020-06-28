@@ -22,7 +22,7 @@ import javax.servlet.http.HttpServletResponse;
  * @description 拦截器
  * @Email songchao_ss@163.com
  */
-@Component
+//@Component
 public class JwtInterceptor extends HandlerInterceptorAdapter {
 
     @Autowired

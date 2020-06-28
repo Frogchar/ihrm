@@ -7,16 +7,19 @@ import com.ihrm.common.entity.ResultCode;
 import com.ihrm.common.exception.CommonException;
 import com.ihrm.common.utils.JwtUtils;
 import com.ihrm.common.utils.PermissionConstants;
+import com.ihrm.domain.company.Department;
 import com.ihrm.domain.system.Permission;
 import com.ihrm.domain.system.Role;
 import com.ihrm.domain.system.User;
 import com.ihrm.domain.system.response.ProfileResult;
+import com.ihrm.system.client.DepartmentFeignClient;
 import com.ihrm.system.service.PermissionService;
 import com.ihrm.system.service.UserService;
 import io.jsonwebtoken.Claims;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.crypto.hash.Md5Hash;
+import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.Subject;
 import org.springframework.data.domain.Page;
 import org.springframework.util.StringUtils;
@@ -48,6 +51,15 @@ public class UserController extends BaseController {
     @Resource
     PermissionService permissionService;
 
+    @Resource
+    DepartmentFeignClient departmentFeignClient;
+
+    @RequestMapping(value = "/test/{id}")
+    public void findDeptById(@PathVariable String id) throws Exception {
+        Result result = departmentFeignClient.findById(id);
+        System.err.println(result);
+    }
+
     /**
      * 获取用户信息
      * @param request
@@ -57,22 +69,27 @@ public class UserController extends BaseController {
     @RequestMapping(value="/profile",method = RequestMethod.POST)
     public Result profile(HttpServletRequest request) throws Exception {
 
-        String userId = claims.getId();
-        User user = userService.findById(userId);
-
-        ProfileResult profileResult = null;
-
-        if ("user".equals(user.getLevel())) {
-            profileResult = new ProfileResult(user);
-        } else {
-            Map map = new HashMap();
-            if ("coAdmin".equals(user.getLevel())) {
-                map.put("enVisible", "1");
-            }
-            List<Permission> perms = permissionService.findAll(map);
-            profileResult = new ProfileResult(user, perms);
-        }
+        Subject subject = SecurityUtils.getSubject();
+        PrincipalCollection principals = subject.getPrincipals();
+        ProfileResult profileResult = (ProfileResult) principals.getPrimaryPrincipal();
         return new Result(ResultCode.SUCCESS, profileResult);
+
+//        String userId = claims.getId();
+//        User user = userService.findById(userId);
+//
+//        ProfileResult profileResult = null;
+//
+//        if ("user".equals(user.getLevel())) {
+//            profileResult = new ProfileResult(user);
+//        } else {
+//            Map map = new HashMap();
+//            if ("coAdmin".equals(user.getLevel())) {
+//                map.put("enVisible", "1");
+//            }
+//            List<Permission> perms = permissionService.findAll(map);
+//            profileResult = new ProfileResult(user, perms);
+//        }
+//        return new Result(ResultCode.SUCCESS, profileResult);
     }
 
     /**
