@@ -16,6 +16,8 @@ import com.ihrm.system.client.DepartmentFeignClient;
 import com.ihrm.system.service.PermissionService;
 import com.ihrm.system.service.UserService;
 import io.jsonwebtoken.Claims;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.crypto.hash.Md5Hash;
@@ -24,10 +26,12 @@ import org.apache.shiro.subject.Subject;
 import org.springframework.data.domain.Page;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +57,61 @@ public class UserController extends BaseController {
 
     @Resource
     DepartmentFeignClient departmentFeignClient;
+
+    /**
+     * 导入Excel，添加用户
+     *  文件上传：springboot
+     */
+    @RequestMapping(value="/user/import",method = RequestMethod.POST)
+    public Result importUser(@RequestParam(name="file") MultipartFile file) throws Exception {
+
+        Workbook wb = new XSSFWorkbook(file.getInputStream());
+        Sheet sheet = wb.getSheetAt(0);
+        List<User> userList = new ArrayList<>();
+        for (int i = 1; i < sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            Object[] values = new Object[row.getLastCellNum()];
+            for (int j = 1; j < row.getLastCellNum(); j++) {
+                Cell cell = row.getCell(j);
+                Object cellValue = getCellValue(cell);
+                values[j] = cellValue;
+            }
+            User user = new User(values);
+            userList.add(user);
+        }
+        userService.saveAll(userList,companyId,companyName);
+        return new Result(ResultCode.SUCCESS);
+    }
+
+    public static Object getCellValue(Cell cell) {
+        // 单元格属性类型
+        CellType cellType = cell.getCellType();
+        //2.根据单元格数据类型获取数据
+        Object value = null;
+        switch (cellType) {
+            case STRING:
+                value = cell.getStringCellValue();
+                break;
+            case BOOLEAN:
+                value = cell.getBooleanCellValue();
+                break;
+            case NUMERIC:
+                if(DateUtil.isCellDateFormatted(cell)) {
+                    //日期格式
+                    value = cell.getDateCellValue();
+                }else{
+                    //数字
+                    value = cell.getNumericCellValue();
+                }
+                break;
+            case FORMULA: //公式
+                value = cell.getCellFormula();
+                break;
+            default:
+                break;
+        }
+        return value;
+    }
 
     @RequestMapping(value = "/test/{id}")
     public void findDeptById(@PathVariable String id) throws Exception {

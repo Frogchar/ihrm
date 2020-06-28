@@ -1,37 +1,35 @@
 package com.ihrm.employee.controller;
 
-import com.alibaba.fastjson.JSON;
 import com.ihrm.common.controller.BaseController;
 import com.ihrm.common.entity.PageResult;
 import com.ihrm.common.entity.Result;
 import com.ihrm.common.entity.ResultCode;
-import com.ihrm.common.exception.CommonException;
 import com.ihrm.common.utils.BeanMapUtils;
-import com.ihrm.common.utils.DownloadUtils;
-import com.ihrm.domain.employee.*;
-import com.ihrm.domain.employee.response.EmployeeReportResult;
-import com.ihrm.employee.service.*;
-import io.jsonwebtoken.Claims;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import com.ihrm.domain.employee.EmployeeArchive;
+import com.ihrm.domain.employee.EmployeePositive;
+import com.ihrm.domain.employee.EmployeeResignation;
+import com.ihrm.domain.employee.EmployeeTransferPosition;
+import com.ihrm.domain.employee.UserCompanyJobs;
+import com.ihrm.domain.employee.UserCompanyPersonal;
+import com.ihrm.employee.service.ArchiveService;
+import com.ihrm.employee.service.PositiveService;
+import com.ihrm.employee.service.ResignationService;
+import com.ihrm.employee.service.TransferPositionService;
+import com.ihrm.employee.service.UserCompanyJobsService;
+import com.ihrm.employee.service.UserCompanyPersonalService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
-import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.net.URLEncoder;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.HashMap;
+import java.util.Map;
 
 
 @RestController
